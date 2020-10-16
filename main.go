@@ -8,6 +8,34 @@ import (
 	"github.com/cryptix/wav"
 )
 
+/*
+TODO:
+  * STEP 1: just copy file (don't modify)
+  * STEP 2: modify sample values
+
+  * extract simpleRead into a function that converts wav file into byte[][]
+	* each index in the byte[][] will be a byte[] of length 2, representing the 16-bit integer of the sample
+  * convert to int32
+	* iterate over byte[][]	
+		* convert each int 16 to int 32
+		* return an int32[]
+  * process samples
+	* randomly modify each sample by +/- 1%
+	  * convert to float32
+	  * randomly decide sign
+	  * randomly decide delta value
+	  * apply delta value
+	  * cast modified float value to int32
+
+  * extract simpleSweep into a function
+	* accepts int32[]
+	* writes file to disk
+	  * takes # samples per second from source file
+	  * bits per sample is 32, b/c wav library only includes 32-bit output
+
+
+*/
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Println("%i", len(os.Args))
