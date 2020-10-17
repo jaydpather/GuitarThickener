@@ -22,7 +22,12 @@ TODO:
 	  * accepts int32[]
 	  * writes file to disk
 	    * takes # samples per second from source file
-	    * bits per sample is 32, b/c wav library only includes 32-bit output
+		* bits per sample is 32, b/c wav library only includes 32-bit output
+		
+	+ had to google slices: declaring, appending, len()
+	+ wrote file, came out distorted
+	  + complete guess: each byte[] in the 16 bits per sample is 1 byte per channel
+	    + this means you need to cast to int16 to average the 2 values. (this is how you convert to mono)
 
 * STEP 2: modify sample values
   * process samples
@@ -58,16 +63,29 @@ func readWavFile() []int {
 
 	samples := []int{}
 	for {
-		curSample, err := wavReader.ReadSample()
+		bytes, err := wavReader.ReadRawSample()
+		
 		if err == io.EOF {
 			break
 		} else if err != nil {
 			panic(err)
 		}
 
-		curSampleAsInt := int(curSample)
+		if len(bytes) != 2 {
+			lenInBits := len(bytes)*8
+			fmt.Println("this app only supports 16 bits per sample, but your file is %i bits per sample", lenInBits)
+			return samples
+		}
 
-		samples = append(samples, curSampleAsInt)
+		leftChannel := uint32(bytes[0])
+		rightChannel := uint32(bytes[1])
+		totalSample := float64(leftChannel + rightChannel)
+		monoSample := totalSample / 2
+		// fmt.Println("left: %i, right: %i, mono: %i", leftChannel, rightChannel, monoSample)
+		
+
+
+		samples = append(samples, int(monoSample))
 	}
 
 	return samples
@@ -81,7 +99,7 @@ func writeFile(samples []int) {
 	meta := wav.File{
 		Channels:        1,
 		SampleRate:      44100,
-		SignificantBits: 16, //hardcoded to 32 bits per sample, b/c that's all that's supported by github.com/cryptix/wav
+		SignificantBits: 8, //hardcoded to 32 bits per sample, b/c that's all that's supported by github.com/cryptix/wav
 	}
 
 	writer, err := meta.NewWriter(wavOut)
@@ -90,6 +108,7 @@ func writeFile(samples []int) {
 
 	for i := 0; i < len(samples); i++ {
 		curSampleAsInt32 := int32(samples[i])
+		//curSampleAsInt32 <<= 4
 		//fmt.Println("curSampleAsInt32: %i", curSampleAsInt32)
 		err = writer.WriteInt32(curSampleAsInt32)
 		checkErr(err)
