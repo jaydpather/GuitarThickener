@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-
+	"math/rand"
 	"github.com/cryptix/wav"
 )
 
@@ -80,6 +80,22 @@ func readWavFile() []int {
 	return samples
 }
 
+func getModifiedSample(sample int, minPctDiff int, maxPctDiff int) int {
+	fSample := float64(sample)
+	fMinPctDiff := float64(minPctDiff)
+	fMaxPctDiff := float64(maxPctDiff)
+
+	fSignMultiplier := -1.0 //we will always decrease the sample. Originally, this was randomly determined to be 1 or -1, but I found that increasing samples can increase distortion too much
+
+	randRange := fMaxPctDiff - fMinPctDiff
+	randValue := rand.Float64() * randRange
+	fPctDiff := (fMinPctDiff + randValue) / 100.0
+	fDiff := fSample * fPctDiff * fSignMultiplier
+
+	retVal := fSample + fDiff
+	return int(retVal)
+}
+
 func writeFile(samples []int) {
 	wavOut, err := os.Create("Test.wav")
 	checkErr(err)
@@ -97,9 +113,17 @@ func writeFile(samples []int) {
 
 	for i := 0; i < len(samples); i++ {
 		curSampleAsInt32 := int32(samples[i])
-		curSampleAsInt32 *= 2 //for some reason, we have to double everything.
-		//fmt.Println("curSampleAsInt32: %i", curSampleAsInt32)
-		err = writer.WriteInt32(curSampleAsInt32)
+
+		minPct := 0
+		maxPct := 1
+		modSample1 := getModifiedSample(int(curSampleAsInt32), minPct, maxPct) / 4.0
+		modSample2 := getModifiedSample(int(curSampleAsInt32), minPct, maxPct) / 4.0
+		modSample3 := getModifiedSample(int(curSampleAsInt32), minPct, maxPct) / 4.0
+		modSample4 := getModifiedSample(int(curSampleAsInt32), minPct, maxPct) / 4.0
+		newSample := modSample1 + modSample2 + modSample3 + modSample4
+		newSample *= 2 //for some reason, we have to double everything.
+
+		err = writer.WriteInt32(int32(newSample))
 		checkErr(err)
 	}
 }
