@@ -96,8 +96,22 @@ func getModifiedSample(sample int, minPctDiff int, maxPctDiff int) int {
 	return int(retVal)
 }
 
+func getThickenedSample(sample int) int {
+	minPct := 0
+	maxPct := 1
+
+	modSample1 := getModifiedSample(sample, minPct, maxPct) / 4.0
+	modSample2 := getModifiedSample(sample, minPct, maxPct) / 4.0
+	modSample3 := getModifiedSample(sample, minPct, maxPct) / 4.0
+	modSample4 := getModifiedSample(sample, minPct, maxPct) / 4.0
+
+	newSample := modSample1 + modSample2 + modSample3 + modSample4
+
+	return newSample
+}
+
 func writeFile(samples []int) {
-	wavOut, err := os.Create("Test.wav")
+	wavOut, err := os.Create("output.wav")
 	checkErr(err)
 	defer wavOut.Close()
 
@@ -114,13 +128,7 @@ func writeFile(samples []int) {
 	for i := 0; i < len(samples); i++ {
 		curSampleAsInt32 := int32(samples[i])
 
-		minPct := 0
-		maxPct := 1
-		modSample1 := getModifiedSample(int(curSampleAsInt32), minPct, maxPct) / 4.0
-		modSample2 := getModifiedSample(int(curSampleAsInt32), minPct, maxPct) / 4.0
-		modSample3 := getModifiedSample(int(curSampleAsInt32), minPct, maxPct) / 4.0
-		modSample4 := getModifiedSample(int(curSampleAsInt32), minPct, maxPct) / 4.0
-		newSample := modSample1 + modSample2 + modSample3 + modSample4
+		newSample := getThickenedSample(int(curSampleAsInt32))
 		newSample *= 2 //for some reason, we have to double everything.
 
 		err = writer.WriteInt32(int32(newSample))
