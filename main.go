@@ -51,7 +51,7 @@ func checkErr(err error) {
 	}
 }
 
-func readWavFile() []int {
+func readWavFile() []int32 {
 	testInfo, err := os.Stat(os.Args[1])
 	checkErr(err)
 
@@ -64,7 +64,7 @@ func readWavFile() []int {
 	fmt.Println("Hello, wav")
 	fmt.Println(wavReader)
 
-	samples := []int{}
+	samples := []int32{}
 	for {
 		sample, err := wavReader.ReadSample()
 		
@@ -74,43 +74,50 @@ func readWavFile() []int {
 			panic(err)
 		}
 
-		samples = append(samples, int(sample))
+		samples = append(samples, sample)
 	}
 
 	return samples
 }
 
-func getModifiedSample(sample int, minPctDiff int, maxPctDiff int) int {
-	fSample := float64(sample)
-	fMinPctDiff := float64(minPctDiff)
-	fMaxPctDiff := float64(maxPctDiff)
+func getModifiedSample(sample int32, minPctDiff int32, maxPctDiff int32) int32 {
+	fSample := float32(sample)
+	fMinPctDiff := float32(minPctDiff)
+	fMaxPctDiff := float32(maxPctDiff)
 
-	fSignMultiplier := -1.0 //we will always decrease the sample. Originally, this was randomly determined to be 1 or -1, but I found that increasing samples can increase distortion too much
+	fSignMultiplier := float32(-1.0)
+	// if rand.Float32() >= 0.5 {
+	// 	fSignMultiplier = 1.0
+	// }
 
 	randRange := fMaxPctDiff - fMinPctDiff
-	randValue := rand.Float64() * randRange
+	randValue := rand.Float32() * randRange
 	fPctDiff := (fMinPctDiff + randValue) / 100.0
-	fDiff := fSample * fPctDiff * fSignMultiplier
+	fDiff := fPctDiff * fSignMultiplier * fSample
 
-	retVal := fSample + fDiff
-	return int(retVal)
+	retVal := int32(fSample + fDiff)
+	return retVal
 }
 
-func getThickenedSample(sample int) int {
-	minPct := 0
-	maxPct := 2
+func getThickenedSample(sample int32) int32 {
+	minPct := int32(1)
+	maxPct := int32(3)
 
-	modSample1 := getModifiedSample(sample, minPct, maxPct) / 4.0
-	modSample2 := getModifiedSample(sample, minPct, maxPct) / 4.0
-	modSample3 := getModifiedSample(sample, minPct, maxPct) / 4.0
-	modSample4 := getModifiedSample(sample, minPct, maxPct) / 4.0
+	reducedSample := int32(float32(sample) / 4.0)
 
-	newSample := modSample1 + modSample2 + modSample3 + modSample4
+	modSample1 := getModifiedSample(reducedSample, minPct, maxPct) 
+	modSample2 := getModifiedSample(reducedSample, minPct, maxPct) 
+	modSample3 := getModifiedSample(reducedSample, minPct, maxPct) 
+	modSample4 := getModifiedSample(reducedSample, minPct, maxPct) 
 
-	return newSample
+	totalSample := modSample1 + modSample2 + modSample3 + modSample4
+	//fTotal := float32(totalSample)
+	//fTotal /= 4.0
+
+	return totalSample //int32(fTotal)
 }
 
-func writeFile(samples []int, fileName string) {
+func writeFile(samples []int32, fileName string) {
 	wavOut, err := os.Create(fileName)
 	checkErr(err)
 	defer wavOut.Close()
@@ -126,12 +133,10 @@ func writeFile(samples []int, fileName string) {
 	defer writer.Close()
 
 	for i := 0; i < len(samples); i++ {
-		curSampleAsInt32 := int32(samples[i])
-
-		newSample := getThickenedSample(int(curSampleAsInt32))
+		newSample := getThickenedSample(samples[i])
 		newSample *= 2 //for some reason, we have to double everything.
 
-		err = writer.WriteInt32(int32(newSample))
+		err = writer.WriteInt32(newSample)
 		checkErr(err)
 	}
 }
