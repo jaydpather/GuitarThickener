@@ -110,8 +110,8 @@ func getThickenedSample(sample int) int {
 	return newSample
 }
 
-func writeFile(samples []int) {
-	wavOut, err := os.Create("output.wav")
+func writeFile(samples []int, fileName string) {
+	wavOut, err := os.Create(fileName)
 	checkErr(err)
 	defer wavOut.Close()
 
@@ -148,5 +148,5 @@ func main() {
 	//fmt.Println("%i", len(samples))
 	//fmt.Println("%A", samples)
 
-	writeFile(samples);
+	writeFile(samples, "output_" + os.Args[1]);
 }
