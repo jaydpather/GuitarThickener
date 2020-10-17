@@ -98,7 +98,7 @@ func getModifiedSample(sample int, minPctDiff int, maxPctDiff int) int {
 
 func getThickenedSample(sample int) int {
 	minPct := 0
-	maxPct := 1
+	maxPct := 2
 
 	modSample1 := getModifiedSample(sample, minPct, maxPct) / 4.0
 	modSample2 := getModifiedSample(sample, minPct, maxPct) / 4.0
