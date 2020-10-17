@@ -27,7 +27,10 @@ TODO:
 	+ had to google slices: declaring, appending, len()
 	+ wrote file, came out distorted
 	  + complete guess: each byte[] in the 16 bits per sample is 1 byte per channel
-	    + this means you need to cast to int16 to average the 2 values. (this is how you convert to mono)
+		+ this means you need to cast to int16 to average the 2 values. (this is how you convert to mono)
+	+ SOLUTION: converted file to mono using web app
+	  + had to double the sample rate, not sure why	
+	
 
 * STEP 2: modify sample values
   * process samples
@@ -63,7 +66,7 @@ func readWavFile() []int {
 
 	samples := []int{}
 	for {
-		bytes, err := wavReader.ReadRawSample()
+		sample, err := wavReader.ReadSample()
 		
 		if err == io.EOF {
 			break
@@ -71,21 +74,7 @@ func readWavFile() []int {
 			panic(err)
 		}
 
-		if len(bytes) != 2 {
-			lenInBits := len(bytes)*8
-			fmt.Println("this app only supports 16 bits per sample, but your file is %i bits per sample", lenInBits)
-			return samples
-		}
-
-		leftChannel := uint32(bytes[0])
-		rightChannel := uint32(bytes[1])
-		totalSample := float64(leftChannel + rightChannel)
-		monoSample := totalSample / 2
-		// fmt.Println("left: %i, right: %i, mono: %i", leftChannel, rightChannel, monoSample)
-		
-
-
-		samples = append(samples, int(monoSample))
+		samples = append(samples, int(sample))
 	}
 
 	return samples
@@ -98,8 +87,8 @@ func writeFile(samples []int) {
 
 	meta := wav.File{
 		Channels:        1,
-		SampleRate:      44100,
-		SignificantBits: 8, //hardcoded to 32 bits per sample, b/c that's all that's supported by github.com/cryptix/wav
+		SampleRate:      32000, //for some reason, this needs to be double the input sample rate
+		SignificantBits: 16, //not sure why this needs to be 16, b/c github.com/cryptix/wav only supports int32 output
 	}
 
 	writer, err := meta.NewWriter(wavOut)
@@ -108,7 +97,7 @@ func writeFile(samples []int) {
 
 	for i := 0; i < len(samples); i++ {
 		curSampleAsInt32 := int32(samples[i])
-		//curSampleAsInt32 <<= 4
+		curSampleAsInt32 *= 2 //for some reason, we have to double everything.
 		//fmt.Println("curSampleAsInt32: %i", curSampleAsInt32)
 		err = writer.WriteInt32(curSampleAsInt32)
 		checkErr(err)
