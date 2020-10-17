@@ -73,6 +73,29 @@ func readWavFile() []int {
 	return samples
 }
 
+func writeFile(samples []int) {
+	wavOut, err := os.Create("Test.wav")
+	checkErr(err)
+	defer wavOut.Close()
+
+	meta := wav.File{
+		Channels:        1,
+		SampleRate:      44100,
+		SignificantBits: 16, //hardcoded to 32 bits per sample, b/c that's all that's supported by github.com/cryptix/wav
+	}
+
+	writer, err := meta.NewWriter(wavOut)
+	checkErr(err)
+	defer writer.Close()
+
+	for i := 0; i < len(samples); i++ {
+		curSampleAsInt32 := int32(samples[i])
+		//fmt.Println("curSampleAsInt32: %i", curSampleAsInt32)
+		err = writer.WriteInt32(curSampleAsInt32)
+		checkErr(err)
+	}
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Println("%i", len(os.Args))
@@ -82,5 +105,8 @@ func main() {
 	}
 
 	samples := readWavFile()
-	fmt.Println("%A", samples)
+	//fmt.Println("%i", len(samples))
+	//fmt.Println("%A", samples)
+
+	writeFile(samples);
 }
